@@ -2,7 +2,7 @@
 
 sxhkd &
 setxkbmap -layout us -option ctrl:nocaps
-sh screens.sh
+sh ~/scripts/screens.sh
 betterlockscreen -l &
 xrdb .Xresources
 wal -i ~/Wallpapers/ && python .config/qutebrowser/scripts/qutebrowser_reload.py
