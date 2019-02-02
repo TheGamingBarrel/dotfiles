@@ -4,30 +4,44 @@
 
 { config, pkgs, ... }:
 
+let
+  unstableTarball =
+    fetchTarball
+      https://github.com/NixOS/nixpkgs-channels/archive/nixos-unstable.tar.gz;
+in
 {
+
   imports =
-     [
+    [ # Include the results of the hardware scan.
       /etc/nixos/hardware-configuration.nix
     ];
+
+  nixpkgs.config = {
+    packageOverrides = pkgs: {
+      unstable = import unstableTarball {
+        config = config.nixpkgs.config;
+      };
+    };
+  };
 
 
   boot.initrd.luks.devices = [
     {
       name = "root";
-      device = "/dev/sdc2";
+      device = "/dev/sdb2";
       preLVM = true;
     }
 ];
 
 
-  nixpkgs.config = {
-    allowUnfree = true;
-  };
+  nixpkgs.config.allowUnfree = true;
 
   hardware.enableAllFirmware = true;
 
+  security.chromiumSuidSandbox.enable = true;
 
   nix.binaryCaches = [
+#    "hydra.mayflower.de:9knPU2SJ2xyI0KTJjtUKOGUVdR2/3cOB4VNDQThcfaY="
     "https://cache.nixos.org"
   ];
 
@@ -38,17 +52,15 @@
 
   sound.enable = true;
 
-  hardware.opengl = {
-    enable = true;
-    driSupport32Bit = true;
-  };
+  
+
 
   services.mpd = {
     enable = true;
     user = "barrel";
     group = "users";
     musicDirectory = "/home/SSD/Music/";
-    dataDir = "/home/barrel/.mpd";
+    dataDir = "/home/barrel/.config/mpd/";
     extraConfig = ''
         audio_output {
           type    "pulse"
@@ -69,6 +81,14 @@
     # package = pkgs.pulseaudioFull;
   };
 
+  hardware.opengl = {
+    enable = true;
+    driSupport = true;
+    driSupport32Bit = true;
+    s3tcSupport = true;
+  };
+    
+
 
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
   networking.networkmanager.enable = true;
@@ -79,22 +99,6 @@
     consoleKeyMap = "us";
     defaultLocale = "en_AU.UTF-8";
   };
-
-#  fonts = {
-#    enableFontDir = true;
-#    enableGhostscriptFonts = true;
-#    fonts = with pkgs; [
-#      liberation_ttf
-#      corefonts  # Micrsoft free fonts
-#      font-awesome-5
-#      noto-fonts
-#      noto-fonts-cjk
-#      noto-fonts-emoji
-#      terminus_font # for hidpi screens, large fonts
-#      ubuntu_font_family  # Ubuntu fonts
-#    ];
-#  };
-
 
   fonts.fonts = with pkgs; [
     iosevka
@@ -128,11 +132,6 @@ fonts.fontconfig = {
   boot.kernel.sysctl = { "net.ipv4.ip_forward" = 1; };
   
   environment.sessionVariables = {
-   # XCURSOR_PATH = [
-   #   "${config.system.path}/share/icons"
-   #   "$HOME/.icons"
-   #   "$HOME/.nix-profile/share/icons/"
-   # ];
     GTK_DATA_PREFIX = [
       "${config.system.path}"
     ];
@@ -142,76 +141,129 @@ fonts.fontconfig = {
   # List packages installed in system profile. To search by name, run:
   # $ nix-env -qaP | grep wget
   environment.systemPackages = with pkgs; [
+
+    # Development
     gcc
     ufraw
-    spotify
-    font-manager
-    exfat
-    xcalib
-    acpi
-    thunderbird
-    zip
+    ffmpeg
+    libGL
+    unstable.unity3d
+    git 
+    nmap
+    iperf
+    gnupg
+    tlp
+    racket
+    python3
+
+    # Music and Video
+
+    mpv
+    mpd
+    playerctl
+
+    # 3D Stuff
+    blender
+
+    # File Management
     unzip
     unrar
+    zip
+    ranger
+
+    # Image Manipulation
     imagemagick
     gimp
+    darktable
+
+    font-manager
+    # GTK Things
     adapta-gtk-theme
     arc-theme
-    xorg.xcursorthemes
     lxappearance
-    darktable
-    playerctl
-    alacritty
     pkgs.gnome3.dconf
-    ranger
-    rxvt_unicode
-    python3
-    exfat-utils
-    sxhkd
+
+
+    # X Stuff
+    unstable.tdrop
+    xdotool
+    sxhkd 
     bspwm
-    fuse_exfat
-    zsh
-    oh-my-zsh
-    pavucontrol
-    vim
-    qutebrowser
-    oh-my-zsh
-    youtube-dl
-    tdesktop
-    mpd
-    mpv
-    emacs
-    wget 
-    git 
+    compton
+    xcalib
+    xorg.xprop
+    xorg.xwininfo
+    xorg.xcursorthemes
     dunst
     rofi
     polybar
-    gnupg
+    alacritty
+    rxvt_unicode
+
+    # Power Management
+
+    acpi
+
+    # File System Stuff
+
+    exfat-utils
+    fuse_exfat
+    exfat
+
+    # Shell Stuff
+    zsh
+    oh-my-zsh
+
+    # Text Editing and Viewing
+    (import ./vim.nix)
+    emacs
     zathura
-    zathura
+    libreoffice
+    ibus
+    youtube-dl
+    wget 
+
+    # Web Browsers
+    unstable.qutebrowser
     chromium
     google-chrome
     firefox
+    tor
+
+    #Games
+    unstable.steam
+
+
+    # Social Medias
+    unstable.discord
+    tdesktop
+    thunderbird
+    keybase
+
+
+    # Miscellaneous 
+    pass
+    filezilla
+    libinput
+    i3lock
+    texlive.combined.scheme-full
+    lm_sensors
     antigen
     maim
-    libreoffice
-    racket
-    libinput
-    xdotool
-    xorg.xprop
-    xorg.xwininfo
-    steam
+    pavucontrol
+
+    # Virtualization
     kvm
-    kicad
-    tmux
-    discord
-    pass
-    i3lock
-    lm_sensors
-    texlive.combined.scheme-full
+
+    # Games
+    minecraft
+
+    
   ];
 
 
+  programs.adb.enable = true;
+#  programs.vim.defaultEditor = true;
   programs.bash.enableCompletion = true;
 
   hardware.pulseaudio.support32Bit = true;
@@ -230,14 +282,28 @@ fonts.fontconfig = {
 
 programs.zsh.promptInit = ""; # Clear this to avoid a conflict with oh-my-zsh
 
+  services.fprintd.enable = true;
+
+  services.printing.enable = true;
+  services.printing.drivers = [ pkgs.hplipWithPlugin ];
+
+  services.avahi.enable = true;
+  services.avahi.publish.enable = true;
+  services.avahi.publish.userServices = true;
+
+  services.printing.browsing = true;
+  services.printing.listenAddresses = [ "*:631" ]; # Not 100% sure this is needed and you might want to restrict to the local network
+  services.printing.defaultShared = true; # If you want
+
+  networking.firewall.allowedUDPPorts = [ 631 8000 5001 ];
+  networking.firewall.allowedTCPPorts = [ 631 8000 ];
+
   # Enable the X11 windowing system.
   services.xserver = {
     enable = true;
     layout = "us";
-    desktopManager.default = "none";
     displayManager.lightdm.enable = true;
     displayManager.lightdm.autoLogin.user = "barrel";
-    synaptics.enable = false;
     libinput = {
       enable = true;
       };
@@ -252,14 +318,14 @@ services.xserver.windowManager = {
 
 programs.dconf.enable = true;
 
-boot.kernelPackages = pkgs.linuxPackages_latest;
+#boot.kernelPackages = with pkgs; linuxPackages_latest;
 
   users.users.barrel =
     { isNormalUser = true;
       home = "/home/barrel";
       shell = pkgs.zsh;
       description = "Will Anderson";
-      extraGroups = [ "docker" "audio" "wheel" "networkmanager" "libvirtd" "qemu" "kvm" ];
+      extraGroups = [ "uucp" "adbusers" "docker" "audio" "wheel" "networkmanager" "libvirtd" "qemu" "kvm" ];
   };
 
   environment.variables = {
@@ -269,16 +335,14 @@ boot.kernelPackages = pkgs.linuxPackages_latest;
 
   boot.kernelModules = [
     "kvm"
+    "acpi_call"
     "kvm_intel"
   ];
  
-
- nixpkgs.config.packageOverrides = pkgs: {
-  polybar = pkgs.polybar.override {
-    mpdSupport = true;
+  i18n.inputMethod = {
+    enabled = "ibus";
+    ibus.engines = with pkgs.ibus-engines; [ hangul table table-others ];
   };
-};
-
 
 
   networking.hostName = "celexa";
@@ -286,11 +350,6 @@ boot.kernelPackages = pkgs.linuxPackages_latest;
   hardware.trackpoint.enable = true;
 
   virtualisation.docker.enable = true;
+  system.stateVersion = "18.03";
 
-  # This value determines the NixOS release with which your system is to be
-  # compatible, in order to avoid breaking some software such as database
-  # servers. You should change this only after NixOS release notes say you
-  # should.
-  #
-    system.stateVersion = "unstable"; # Did you read the comment?
 }
